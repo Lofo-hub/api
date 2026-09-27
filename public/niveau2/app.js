@@ -13,9 +13,30 @@ function afficher(texte, classe) {
 // GET : les 5 premiers articles
 async function charger() {
   // TODO 1 : appeler `${API}?_limit=5` avec l'en-tête Accept: application/json.
-  // TODO 2 : si reponse.ok est faux, afficher le code d'erreur et s'arrêter.
-  // TODO 3 : vider #liste, puis créer un <li> par article (id et title)
-  //          avec un bouton « Supprimer » qui appelle supprimer(article.id).
+const reponse = await fetch(`${API}?_limit=5`, {
+  headers: {
+    'Accept': 'application/json'
+  } 
+ })
+ // TODO 2 : si reponse.ok est faux, afficher le code d'erreur et s'arrêter.
+ if(!reponse.ok) {
+  afficher(`Erreur ${reponse.status}`, 'erreur');
+  return;
+ }
+ // TODO 3 : vider #liste, puis créer un <li> par article (id et title)
+ // avec un bouton « Supprimer » qui appelle supprimer(article.id).
+ const articles = await reponse.json;
+ liste.innerHTML = '';
+ articles.forEach(article => {
+  const li = document.createElement('li');
+  li.textContent = `${article.id} - ${article.title} `;
+  const btn = document.createElement('button');
+  btn.textContent = 'Supprimer';
+  btn.addEventListener('click' , () => supprimer(article.id));
+
+  li.appendChild(btn);
+  liste.appendChild(li);
+ });
 }
 
 // POST : créer un article
@@ -23,12 +44,40 @@ form.addEventListener('submit', async (e) => {
   e.preventDefault();
   const { title, body } = Object.fromEntries(new FormData(form));
   // TODO 4 : envoyer { title, body, userId: 1 } en JSON (POST, en-tête Content-Type).
+  const reponse = await fetch(`${API}`, {
+  method: 'POST',
+  headers: {
+    'Accept': 'application/json',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({ title, body, userId: 1 })
+});
+
+if (reponse.status === 201) {
+  const nouvelarticle = await reponse.json();
+  afficher(`Id de l'article ${nouvelarticle.id}`, 'success');
+  form.reset();
+  charger();
+} else {
+  afficher(`Erreur ${reponse.status}`, 'erreur');
+}
   // TODO 5 : si le statut est 201, afficher l'identifiant attribué puis recharger la liste.
   //          Le nouvel article apparaît-il ? Pourquoi ?
 });
 
 // DELETE : supprimer un article
 async function supprimer(id) {
+  const reponse = await fetch(`${API}/${id}` , {
+    method: 'DELETE',
+    headers: {
+      'Accept': 'application/json'
+    }
+  })
+  if (reponse.ok) {
+    afficher(reponse.status , 'success');
+  } else {
+    afficher(reponse.status , 'error');
+  }
   // TODO 6 : envoyer DELETE sur `${API}/${id}` et afficher le code reçu.
 }
 
