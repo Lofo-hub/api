@@ -22,17 +22,27 @@ class Livres extends ResourceController
     protected $format    = 'json';
 
     // GET /api/livres
+    // TODO : renvoyer les livres (200) au format du contrat :
+    //        {"donnees": [ ...livres... ]}
+    // Bonus : pagination avec ?page=2&par_page=10, et les clés page, par_page, total.
     public function index()
     {
-        // TODO : renvoyer les livres (200) au format du contrat :
-        //        {"donnees": [ ...livres... ]}
-        // Bonus : pagination avec ?page=2&par_page=10, et les clés page, par_page, total.
+        $livres = $this->model->findAll();
+
+        return $this->respond([
+            'donnees' => $livres,
+        ]);
     }
 
     // GET /api/livres/{id}
     public function show($id = null)
     {
         // TODO : 200 avec le livre, ou 404 s'il n'existe pas.
+        $livre = $this->model->find($id);
+        if($livre === null){
+            return $this->failNotFound("Livre {$id} introuvable");
+        }
+        return $this->respond($livre , 200);
     }
 
     // POST /api/livres
@@ -40,26 +50,65 @@ class Livres extends ResourceController
     {
         // TODO 1 : lire le corps JSON. Attention : getPost() ne marche pas ici.
         //          Indice : $this->request->getJSON(true)
+        $data = $this->request->getJSON(true);
+        
         // TODO 2 : insérer ; si la validation échoue, répondre 400 avec les erreurs.
+        if(! $this->model->insert($data)){
+            return $this->failValidationErrors($this->model->errors());
+        }
+
         // TODO 3 : répondre 201 avec la ressource créée
         //          ET un en-tête Location vers /api/livres/{id}.
         //          respondCreated() ajoute-t-il cet en-tête ? Vérifiez avec curl -i.
+        $id = $this->model->getInsertID();
+        $livre = $this->model->find($id);
+
+        $this->response->setHeader('Location' , "/api/livres/{$id}");
+        return $this->respondCreated($livre);
     }
 
     // PUT et PATCH /api/livres/{id} arrivent ici tous les deux.
     public function update($id = null)
     {
         // TODO 1 : 404 si le livre n'existe pas.
+        $livre = $this->model->find($id);
+        if (! isset($livre)) {
+            return $this->$this->failNotFound("Livre {$id} introuvable");
+        }
         // TODO 2 : décider comment traiter PUT (remplacement complet)
         //          et PATCH (modification partielle).
         //          Indice : $this->request->getMethod()
-        // TODO 3 : 200 avec la ressource à jour, ou 400 si les données sont invalides.
+        $methode = $this->request->getMethod();
+        $data = $this->request->getJSON(true);;
+        if ($methode == "PUT") {
+                $data = array_merge([
+                'titre'  => null,
+                'auteur' => null,
+                'annee'  => null,
+            ], $data);
+        }
+          if (! $this->model->update($id, $data)) {
+        return $this->failValidationErrors($this->model->errors());
+    }
+
+    // TODO 3 : 200 avec la ressource à jour, ou 400 si les données sont invalides.
+    $livreMisAJour = $this->model->find($id);
+    return $this->respond($livreMisAJour, 200);
     }
 
     // DELETE /api/livres/{id}
-    public function delete($id = null)
-    {
-        // TODO : 404 si le livre n'existe pas, sinon supprimer.
-        //        200 ou 204 ? Choisissez et justifiez en commentaire.
+   public function delete($id = null)
+{
+    $livre = $this->model->find($id);
+
+    if ($livre === null) {
+        return $this->failNotFound("Livre {$id} introuvable");
     }
+
+    $this->model->delete($id);
+
+
+    // Justification : 200 au lieu de de 204 pour confirmer le suppression au client
+    return $this->respondDeleted(['id' => $id]);
+}
 }
