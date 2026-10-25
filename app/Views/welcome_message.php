@@ -248,6 +248,7 @@
     <p>The corresponding controller for this page can be found at:</p>
 
     <pre><code>app/Controllers/Home.php</code></pre>
+    <p>coucou</p>
 
 </section>
 

@@ -10,6 +10,7 @@ class LivreModel extends Model
     protected $primaryKey    = 'id';
     protected $returnType    = 'array';
     protected $allowedFields = ['titre', 'auteur', 'annee'];
+    
 
     // Les règles de validation produisent les erreurs renvoyées en 400.
     protected $validationRules = [
